@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مصمم الملابس التابع لشركة ANAQA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f0f1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .card { background: #1e1e32; padding: 20px; border-radius: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); max-width: 950px; width: 100%; }
+        h2 { color: #fff; text-align: center; font-weight: 400; margin-bottom: 5px; }
+        h2 span { color: #f0a500; font-weight: 700; }
+        .sub { color: #888; text-align: center; font-size: 13px; margin-bottom: 15px; }
+        
+        .tools {
+            display: flex; flex-wrap: wrap; gap: 10px; background: #2a2a42;
+            padding: 15px; border-radius: 18px; margin-bottom: 15px;
+            justify-content: center; align-items: center;
+        }
+        .tools button, .tools label {
+            padding: 8px 14px; border: none; border-radius: 50px;
+            background: #3d3d5c; color: white; font-weight: bold; font-size: 12px;
+            cursor: pointer; transition: 0.2s; text-align: center;
+            display: inline-flex; align-items: center; gap: 5px;
+            border: 1px solid transparent; white-space: nowrap;
+        }
+        .tools button:active { transform: scale(0.95); }
+        .tools button:hover { background: #f0a500; color: #1e1e32; }
+        
+        #fileInputTshirt { display: none; }
+        #fileInputLogo { display: none; }
+        .btn-upload-tshirt { background: #e76f51; }
+        .btn-upload-tshirt:hover { background: #f4a261; }
+        .btn-upload-logo { background: #2a6f97; }
+        .btn-upload-logo:hover { background: #4a9fd8; }
+        .btn-download { background: #2d8f4e; }
+        .btn-download:hover { background: #3db862; }
+        .btn-clear-all { background: #8f2d3b; }
+        .btn-clear-all:hover { background: #c53d4f; }
+        .btn-delete-selected { background: #d62828; }
+        .btn-delete-selected:hover { background: #ef476f; }
+        .btn-add-text { background: #d4872b; }
+        .btn-add-text:hover { background: #f0a500; }
+        .btn-remove-bg { background: #8e44ad; }
+        .btn-remove-bg:hover { background: #af5fd4; }
+
+        .canvas-wrap { background: #111; border-radius: 18px; padding: 10px; display: flex; justify-content: center; border: 2px solid #333; }
+        #canvas { border-radius: 10px; background: #e9ecef; max-width: 100%; height: auto; display: block; touch-action: none; }
+
+        .info { color: #6a6a8a; text-align: center; margin-top: 15px; font-size: 12px; line-height: 1.8; }
+        .info strong { color: #f0a500; }
+        .info .highlight { color: #af5fd4; font-weight: bold; }
+        .info .highlight2 { color: #d62828; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🧵 <span>استوديو</span> التعديل التابع لشركة ANAQA</h2>
+    <p class="sub">✂️ ارفع الملابس واللوجو، وشيل الخلفية، وامسح اللي إنت عايزه</p>
+
+    <div class="tools">
+        <!-- 1. رفع التيشرت -->
+        <label for="fileInputTshirt" class="btn-upload-tshirt">👕 رفع الملابس </label>
+        <input type="file" id="fileInputTshirt" accept="image/*" onchange="uploadTshirt(event)">
+
+        <!-- 2. رفع اللوجو -->
+        <label for="fileInputLogo" class="btn-upload-logo">🖼️ رفع لوجو</label>
+        <input type="file" id="fileInputLogo" accept="image/*" onchange="uploadLogo(event)">
+
+        <!-- 3. إضافة نص -->
+        <button onclick="addText()" class="btn-add-text">✏️ إضافة نص</button>
+
+        <!-- 4. إزالة الخلفية (لأي صورة محددة) -->
+        <button onclick="removeBackgroundAny()" class="btn-remove-bg">🧹 إزالة خلفية الصورة المحددة</button>
+
+        <!-- 5. مسح المحدد (جديد) -->
+        <button onclick="deleteSelected()" class="btn-delete-selected">🗑️ مسح المحدد</button>
+
+        <!-- 6. مسح الكل -->
+        <button onclick="clearAll()" class="btn-clear-all">🧹 مسح الكل</button>
+
+        <!-- 7. تحميل -->
+        <button onclick="downloadImage()" class="btn-download">⬇️ تحميل PNG</button>
+    </div>
+
+    <div class="canvas-wrap">
+        <canvas id="canvas" width="500" height="500"></canvas>
+    </div>
+
+    <div class="info">
+        💡 <span class="highlight">إزالة الخلفية:</span> اضغط على أي صورة (تيشرت أو لوجو)، ثم اضغط الزر  👈 هيتعرف على خلفيتها ويشيلها. <br>
+        💡 <span class="highlight2">مسح المحدد:</span> اضغط على أي عنصر (صورة أو نص)، ثم اضغط الزر  👈 هيمسح العنصر ده بس. <br>
+        💡 <strong>مسح الكل:</strong> بيمسح التصميم كله ويرجع للصفحة الفارغة.
+    </div>
+</div>
+
+<script>
+    // ===================== إعداد الكانفاس =====================
+    const canvas = new fabric.Canvas('canvas', {
+        backgroundColor: '#e9ecef',
+        selection: true,
+        preserveObjectStacking: true
+    });
+    canvas.selection = false;
+
+    let tshirtObject = null;
+
+    // ===================== 1. رفع التيشرت =====================
+    function uploadTshirt(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(f) {
+            fabric.Image.fromURL(f.target.result, function(img) {
+                const maxDim = 450;
+                let scale = 1;
+                if (img.width > maxDim) scale = maxDim / img.width;
+                if (img.height * scale > maxDim) scale = maxDim / img.height;
+                img.scale(scale);
+                img.set({
+                    left: (canvas.width - img.width * scale) / 2,
+                    top: (canvas.height - img.height * scale) / 2,
+                    cornerColor: '#f0a500',
+                    cornerSize: 14,
+                    transparentCorners: false,
+                    borderColor: '#f0a500'
+                });
+                img._originalDataURL = f.target.result;
+                canvas.add(img);
+                canvas.sendToBack(img);
+                canvas.setActiveObject(img);
+                tshirtObject = img;
+                canvas.renderAll();
+            });
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+
+    // ===================== 2. رفع اللوجو =====================
+    function uploadLogo(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(f) {
+            fabric.Image.fromURL(f.target.result, function(img) {
+                const maxDim = 300;
+                let scale = 1;
+                if (img.width > maxDim) scale = maxDim / img.width;
+                if (img.height * scale > maxDim) scale = maxDim / img.height;
+                img.scale(scale);
+                img.set({
+                    left: (canvas.width - img.width * scale) / 2,
+                    top: (canvas.height - img.height * scale) / 2,
+                    cornerColor: '#f0a500',
+                    cornerSize: 14,
+                    transparentCorners: false,
+                    borderColor: '#f0a500'
+                });
+                img._originalDataURL = f.target.result;
+                canvas.add(img);
+                canvas.setActiveObject(img);
+                canvas.renderAll();
+            });
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+
+    // ===================== 3. إضافة نص =====================
+    function addText() {
+        const text = new fabric.IText('اكتب اسمك', {
+            left: 150, top: 200, fontFamily: 'Arial', fill: '#000000',
+            fontSize: 40, fontWeight: 'bold', cornerColor: '#f0a500',
+            cornerSize: 14, transparentCorners: false, borderColor: '#f0a500'
+        });
+        canvas.add(text);
+        canvas.setActiveObject(text);
+        canvas.renderAll();
+    }
+
+    // ===================== 4. 🧹 إزالة خلفية أي صورة محددة =====================
+    function removeBackgroundAny() {
+        const obj = canvas.getActiveObject();
+        if (!obj) {
+            alert('⚠️ من فضلك اضغط على الصورة (تيشرت أو لوجو) عشان تختارها.');
+            return;
+        }
+        if (obj.type !== 'image') {
+            alert('⚠️ العنصر المحدد مش صورة. اختار صورة.');
+            return;
+        }
+
+        const imgDataURL = obj._originalDataURL || obj.toDataURL();
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            tempCtx.drawImage(img, 0, 0, img.width, img.height);
+            
+            const c1 = tempCtx.getImageData(0, 0, 1, 1).data;
+            const c2 = tempCtx.getImageData(img.width - 1, 0, 1, 1).data;
+            const c3 = tempCtx.getImageData(0, img.height - 1, 1, 1).data;
+            const c4 = tempCtx.getImageData(img.width - 1, img.height - 1, 1, 1).data;
+            
+            const r = Math.round((c1[0] + c2[0] + c3[0] + c4[0]) / 4);
+            const g = Math.round((c1[1] + c2[1] + c3[1] + c4[1]) / 4);
+            const b = Math.round((c1[2] + c2[2] + c3[2] + c4[2]) / 4);
+            const hexColor = '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
+            
+            const removeIndex = obj.filters.findIndex(f => f.type === 'RemoveColor');
+            if (removeIndex !== -1) obj.filters.splice(removeIndex, 1);
+            
+            obj.filters.push(new fabric.Image.filters.RemoveColor({ color: hexColor, distance: 0.25 }));
+            obj.applyFilters();
+            canvas.renderAll();
+            alert(`✅ تم إزالة خلفية الصورة (اللون: ${hexColor}) بنجاح!`);
+        };
+        img.src = imgDataURL;
+    }
+
+    // ===================== 5. 🗑️ مسح العنصر المحدد فقط (الجديد) =====================
+    function deleteSelected() {
+        const obj = canvas.getActiveObject();
+        if (!obj) {
+            alert('⚠️ من فضلك اضغط على العنصر (صورة أو نص) عشان تحذفه.');
+            return;
+        }
+        // لو العنصر المحدد هو التيشرت، نخلي المتغير tshirtObject يساوي null
+        if (obj === tshirtObject) {
+            tshirtObject = null;
+        }
+        canvas.remove(obj);
+        canvas.renderAll();
+    }
+
+    // ===================== 6. 🧹 مسح الكل =====================
+    function clearAll() {
+        if (confirm('امسح كل حاجة من التصميم؟')) {
+            canvas.clear();
+            tshirtObject = null;
+            canvas.setBackgroundColor('#e9ecef', canvas.renderAll.bind(canvas));
+        }
+    }
+
+    // ===================== 7. تحميل التصميم =====================
+    function downloadImage() {
+        canvas.discardActiveObject();
+        canvas.renderAll();
+        const dataURL = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
+        const link = document.createElement('a');
+        link.download = 'تصميم_التيشرت_النهائي.png';
+        link.href = dataURL;
+        link.click();
+    }
+
+    // ===================== تحسينات بصرية =====================
+    canvas.on('selection:created', function(e) {
+        const obj = e.selected[0];
+        if (obj) { obj.set({ cornerColor: '#f0a500', borderColor: '#f0a500' }); canvas.renderAll(); }
+    });
+
+    
+</script>
+
+</body>
+</html>
